@@ -1,0 +1,9 @@
+* text=auto eol=lf
+*.ps1 text eol=crlf
+*.md text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.cjs text eol=lf
+*.mjs text eol=lf
+*.patch text eol=lf -whitespace
+LICENSE text eol=lf -whitespace

@@ -1,0 +1,30 @@
+diff --git a/browser/components/BrowserContentHandler.sys.mjs b/browser/components/BrowserContentHandler.sys.mjs
+index 4156ab6..540de45 100644
+--- a/browser/components/BrowserContentHandler.sys.mjs
++++ b/browser/components/BrowserContentHandler.sys.mjs
+@@ -1822,6 +1822,25 @@ nsDefaultCommandLineHandler.prototype = {
+         openBrowserWindow(cmdLine, lazy.gSystemPrincipal, URLlist);
+       }
+     } else if (!cmdLine.preventDefault) {
++      // zen-reuse-window patch v1 (MPL-2.0)
++      if (
++        cmdLine.state != Ci.nsICommandLine.STATE_INITIAL_LAUNCH &&
++        cmdLine.length == 0 &&
++        !gKiosk &&
++        Services.prefs.getBoolPref("zen.window-reuse-on-launch", true)
++      ) {
++        let win = lazy.BrowserWindowTracker.getTopWindow({
++          private: lazy.PrivateBrowsingUtils.permanentPrivateBrowsing,
++          allowFromInactiveWorkspace: true,
++        });
++        if (win) {
++          if (win.windowState == win.STATE_MINIMIZED) {
++            win.restore();
++          }
++          win.focus();
++          return;
++        }
++      }
+       if (
+         AppConstants.platform == "win" &&
+         cmdLine.state != Ci.nsICommandLine.STATE_INITIAL_LAUNCH &&

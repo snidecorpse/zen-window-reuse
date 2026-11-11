@@ -1,0 +1,25 @@
+name: Compatibility or behavior report
+description: Report a patch failure or unexpected window behavior.
+title: "[Bug] "
+body:
+  - type: input
+    id: versions
+    attributes:
+      label: Versions
+      description: Zen, Windows, and PowerShell versions.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps and expected behavior
+      description: Include whether the launch had a URL and whether Zen was minimized or on another desktop.
+    validations:
+      required: true
+  - type: textarea
+    id: result
+    attributes:
+      label: Actual result and relevant output
+      description: Redact personal paths, URLs, account names, and browsing data. Do not upload your browser archive or profile.
+    validations:
+      required: true

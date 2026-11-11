@@ -1,0 +1,140 @@
+diff --git a/locales/en-US/browser/browser/preferences/zen-preferences.ftl b/locales/en-US/browser/browser/preferences/zen-preferences.ftl
+index cd27161..18c47fe 100644
+--- a/locales/en-US/browser/browser/preferences/zen-preferences.ftl
++++ b/locales/en-US/browser/browser/preferences/zen-preferences.ftl
+@@ -8,6 +8,10 @@ category-zen-looks =
+ 
+ zen-warning-language = Changing the default language could make it easier for Websites to track you.
+ 
++# Windows: launching the executable again without a URL should reuse a main window.
++zen-window-reuse-on-launch =
++    .label = Focus an existing window when { -brand-short-name } is launched again
++
+ zen-vertical-tabs-layout-header = Browser Layout
+ zen-vertical-tabs-layout-description = Choose the layout that suits you best
+ 
+diff --git a/prefs/zen/windows.yaml b/prefs/zen/windows.yaml
+index 0ed3660..09050bd 100644
+--- a/prefs/zen/windows.yaml
++++ b/prefs/zen/windows.yaml
+@@ -2,6 +2,11 @@
+ # License, v. 2.0. If a copy of the MPL was not distributed with this
+ # file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ 
++# Keep normal relaunch behavior unless the user opts in.
++- name: zen.window-reuse-on-launch
++  value: false
++  condition: "defined(XP_WIN)"
++
+ # Mica effect preferences for Windows
+ - name: widget.windows.mica
+   value: true
+diff --git a/src/browser/components/BrowserContentHandler-sys-mjs.patch b/src/browser/components/BrowserContentHandler-sys-mjs.patch
+index 03a7e9b..7698e6f 100644
+--- a/src/browser/components/BrowserContentHandler-sys-mjs.patch
++++ b/src/browser/components/BrowserContentHandler-sys-mjs.patch
+@@ -1,5 +1,5 @@
+ diff --git a/browser/components/BrowserContentHandler.sys.mjs b/browser/components/BrowserContentHandler.sys.mjs
+-index f20c90621a73fed5cee4410ec4af6762d07448ba..bef1b9bb2f3cfab9c192d8b63c1617fef9ee4c46 100644
++index f20c906..7c56d4b 100644
+ --- a/browser/components/BrowserContentHandler.sys.mjs
+ +++ b/browser/components/BrowserContentHandler.sys.mjs
+ @@ -27,6 +27,8 @@ ChromeUtils.defineESModuleGetters(lazy, {
+@@ -93,3 +93,29 @@ index f20c90621a73fed5cee4410ec4af6762d07448ba..bef1b9bb2f3cfab9c192d8b63c1617fe
+      return;
+    }
+  
++@@ -1794,6 +1855,25 @@ nsDefaultCommandLineHandler.prototype = {
++         openBrowserWindow(cmdLine, lazy.gSystemPrincipal, windowURLs);
++       }
++     } else if (!cmdLine.preventDefault) {
+++      if (
+++        AppConstants.platform == "win" &&
+++        cmdLine.state != Ci.nsICommandLine.STATE_INITIAL_LAUNCH &&
+++        cmdLine.length == 0 &&
+++        !gKiosk &&
+++        Services.prefs.getBoolPref("zen.window-reuse-on-launch", false)
+++      ) {
+++        let win = lazy.BrowserWindowTracker.getTopWindow({
+++          private: lazy.PrivateBrowsingUtils.permanentPrivateBrowsing,
+++          allowFromInactiveWorkspace: true,
+++        });
+++        if (win) {
+++          if (win.windowState == win.STATE_MINIMIZED) {
+++            win.restore();
+++          }
+++          win.focus();
+++          return;
+++        }
+++      }
++       if (
++         AppConstants.platform == "win" &&
++         cmdLine.state != Ci.nsICommandLine.STATE_INITIAL_LAUNCH &&
+diff --git a/src/browser/components/preferences/main-js.patch b/src/browser/components/preferences/main-js.patch
+index deefea5..4121496 100644
+--- a/src/browser/components/preferences/main-js.patch
++++ b/src/browser/components/preferences/main-js.patch
+@@ -1,8 +1,8 @@
+ diff --git a/browser/components/preferences/main.js b/browser/components/preferences/main.js
+-index 5a56d348146c1c37c088ced60327fffebcf8fac0..abd65594d365fbc0a74af3953c71f410301898ad 100644
++index 6b20696..e472fd3 100644
+ --- a/browser/components/preferences/main.js
+ +++ b/browser/components/preferences/main.js
+-@@ -529,6 +529,11 @@ function createStartupConfig(hidden = false) {
++@@ -487,6 +487,16 @@ function createStartupConfig(hidden = false) {
+            },
+          ],
+        },
+@@ -10,11 +10,16 @@ index 5a56d348146c1c37c088ced60327fffebcf8fac0..abd65594d365fbc0a74af3953c71f410
+ +        id: "zenWorkspaceContinueWhereLeftOff",
+ +        l10nId: "zen-workspace-continue-where-left-off",
+ +        control: "moz-checkbox",
+++      },
+++      {
+++        id: "zenWindowReuseOnLaunch",
+++        l10nId: "zen-window-reuse-on-launch",
+++        control: "moz-checkbox",
+ +      },
+        {
+          id: "windowsLaunchOnLogin",
+          l10nId: "windows-launch-on-login",
+-@@ -576,7 +581,7 @@ function createStartupConfig(hidden = false) {
++@@ -526,7 +536,7 @@ function createStartupConfig(hidden = false) {
+  SettingGroupManager.registerGroups({
+    defaultBrowser: createDefaultBrowserConfig(),
+    startup: createStartupConfig(
+@@ -23,7 +28,7 @@ index 5a56d348146c1c37c088ced60327fffebcf8fac0..abd65594d365fbc0a74af3953c71f410
+    ),
+  });
+  
+-@@ -636,7 +641,7 @@ function getBundleForLocales(newLocales) {
++@@ -586,7 +596,7 @@ function getBundleForLocales(newLocales) {
+      ])
+    );
+    return new Localization(
+diff --git a/src/browser/components/preferences/zen-settings.js b/src/browser/components/preferences/zen-settings.js
+index 6750869..8a90301 100644
+--- a/src/browser/components/preferences/zen-settings.js
++++ b/src/browser/components/preferences/zen-settings.js
+@@ -764,6 +764,11 @@ var gZenWorkspacesSettings = {
+ };
+ 
+ Preferences.addAll([
++  {
++    id: "zen.window-reuse-on-launch",
++    type: "bool",
++    default: false,
++  },
+   {
+     id: "zen.view.compact.toolbar-flash-popup",
+     type: "bool",
+@@ -875,3 +880,9 @@ Preferences.addSetting({
+   id: "zenWorkspaceContinueWhereLeftOff",
+   pref: "zen.workspaces.continue-where-left-off",
+ });
++
++Preferences.addSetting({
++  id: "zenWindowReuseOnLaunch",
++  pref: "zen.window-reuse-on-launch",
++  visible: () => Services.appinfo.OS === "WINNT",
++});

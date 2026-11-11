@@ -1,0 +1,13 @@
+.work/
+artifacts/
+dist/
+*.log
+*.ja
+*.zip
+*.bak
+*.tmp
+user.js
+prefs.js
+compatibility.ini
+.DS_Store
+Thumbs.db

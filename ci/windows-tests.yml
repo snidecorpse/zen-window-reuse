@@ -1,0 +1,40 @@
+name: Windows tests
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        shell: [powershell, pwsh]
+    defaults:
+      run:
+        shell: ${{ matrix.shell }}
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version: '24'
+      - name: Check PowerShell syntax
+        run: |
+          $errors = $null
+          $tokens = $null
+          [System.Management.Automation.Language.Parser]::ParseFile((Join-Path (Get-Location) 'Patch-ZenWindowReuse.ps1'), [ref]$tokens, [ref]$errors) | Out-Null
+          if ($errors.Count) { throw ($errors | Out-String) }
+      - name: Test cache invalidation with isolated profiles
+        run: .\tests\cache-invalidation.test.ps1
+      - name: Test complete installer lifecycle with synthetic archives
+        run: .\tests\installer-lifecycle.test.ps1
+      - name: Test patched command-line handler
+        run: |
+          $env:ZEN_POWERSHELL = '${{ matrix.shell }}'
+          node --test .\tests\launch-handler.test.cjs
+          if ($LASTEXITCODE -ne 0) { throw 'Handler tests failed.' }
