@@ -1,51 +1,65 @@
 # Zen Window Reuse
 
-Launch Zen again from Windows Start/Search and bring your existing window forward without opening another main window.
+Something that annoyed me a lot and coming from the now dead Arc browser (tragic asf btw) that when using that, or Dia and similar that searching the windows search bar or opening external links, it would focus/open it on the existing window and not create a whole new one. With how I work coming from being a Mac user, I use the search to open up zen, and every time it would open a new window. So I chose to build this, and now with external links and such it just focuses the existing window rather than open a new one. 
 
-This unofficial, reversible Windows workaround is tested with **Zen 1.24.1b**. It restores minimized windows, permits reuse across Windows virtual desktops, and preserves cold startup, Ctrl+N, explicit new/private windows, and URL dispatch.
+TLDR: Launch Zen again from Windows Start/Search will bring your existing window forward without opening another main window.
 
-The workaround already has an [about:config toggle](#toggle-the-behavior). The repository also includes a [native Settings proposal](docs/UPSTREAM_PROPOSAL.md) and an [upstream source draft](upstream/README.md) for a default-off checkbox.
+Unofficial, reversible Windows workaround only tested with **Zen 1.24.1b**. 
+
+It restores minimized windows, reuse across Windows virtual desktops, and preserves startup, Ctrl+N (if you do actually want a new window, in this case it'll open the latest window you opened), explicit new/private windows, and URL dispatch.
+
+The workaround already has an [about:config toggle](#toggle-the-behavior). 
+The repository also includes a [native Settings proposal](docs/UPSTREAM_PROPOSAL.md) and an [upstream source draft](upstream/README.md) for a default-off checkbox.
 
 ## Quick start
 
-Requires Windows PowerShell 5.1 or PowerShell 7 and an installed Zen Browser. No Python, archive utility, extension, or downloaded runtime is needed.
+Requires Windows PowerShell 5.1 or PowerShell 7 and an installed Zen Browser. 
+No Python, archive utility, extension, or downloaded runtime is needed.
 
-1. [Download the source ZIP](https://github.com/snidecorpse/zen-window-reuse/archive/refs/heads/main.zip) or clone this repository, then extract it.
-2. Fully exit Zen, including all windows. Open PowerShell in the project directory. Use **Administrator PowerShell** for a `Program Files` installation.
-3. Review the script, prepare the patch, then apply it:
+1. [Download the source ZIP](https://github.com/snidecorpse/zen-window-reuse/archive/refs/heads/main.zip), clone, yk the gist
+2. Fully exit Zen everything, (kill tasks in task manager)
+3. Open PowerShell in the project directory. Use **Administrator PowerShell** for a `Program Files` installation.
+4. Review the script, prepare the patch, then apply it
 
 ```powershell
-# Read-only status.
+# Read-only status
 .\Patch-ZenWindowReuse.ps1 -Check
 
-# Build a verified candidate and previews; leave Zen and profiles unchanged.
+# Build a verified candidate and previews; leave Zen and profiles unchanged
 .\Patch-ZenWindowReuse.ps1 -PrepareOnly
 
-# Keep a matching backup, install, and queue browser code-cache refresh.
+# Keep a matching backup, install, and queue browser code-cache refresh
 .\Patch-ZenWindowReuse.ps1
 ```
 
-Open Zen normally, then launch it again from Windows Search. The same suitable window should come forward. Minimize it and repeat to check restoration. **Ctrl+N still opens a new window.**
+Open Zen normally, then launch it again from Windows Search. The same window should come forward. 
+Minimize it and repeat to check restoration. **Ctrl+N still opens a new window.**
 
-If PowerShell blocks a downloaded script, review it and use a method permitted by your local policy; see [troubleshooting](docs/TROUBLESHOOTING.md#powershell-blocks-a-downloaded-script).
+If PowerShell blocks a downloaded script, review it and use a method permitted
+see [troubleshooting](docs/TROUBLESHOOTING.md#powershell-blocks-a-downloaded-script).
 
 ## Toggle the behavior
 
-In `about:config`, search for **`zen.window-reuse-on-launch`**. If absent, create it as a **Boolean**. Set it to `false` to disable reuse or `true` to enable it.
+In `about:config`, search for **`zen.window-reuse-on-launch`**. If it doesnt exist, create it as a **Boolean**. Set it to `false` to disable reuse or `true` to enable it.
 
-This unofficial preference defaults to enabled when absent because installing the workaround is an explicit choice. It has no effect in stock Zen. The [upstream draft](upstream/README.md) instead registers a default-off preference and adds a localized Settings checkbox.
+This unofficial preference defaults to enabled when absent because installing the workaround is a choice. 
+It has no effect in stock Zen. 
+The [upstream draft](upstream/README.md) instead registers a default off preference and adds a localized Settings checkbox.
 
 ## Updates and rollback
 
-After a Zen update, fully close Zen and rerun the script. Keep browser updates enabled. A changed or ambiguous handler layout stops for review rather than guessing where to patch.
+After a Zen update, fully close Zen and rerun the script. Keep browser updates enabled. 
+A changed or ambiguous handler layout stops for review rather than guessing where to patch.
 
-Keep `artifacts/`, which contains the original archive, verified candidate, and matching manifest. To restore, close Zen and use the exact backup path reported by the installer:
+Keep `artifacts/`, which contains the original archive, verified candidate, and matching manifest. \
+To restore, close Zen and use the exact backup path reported by the installer:
 
 ```powershell
 .\Patch-ZenWindowReuse.ps1 -RestoreBackup 'D:\saved\artifacts\omni.original.<hash>.ja'
 ```
 
-If artifacts were moved, add `-OutputDirectory 'D:\saved\artifacts'`. Restoration checks the build and archive hashes and refreshes the code cache. It refuses a backup from an older/different installed build. [Full rollback instructions](docs/TROUBLESHOOTING.md#restore-the-original-archive).
+If artifacts were moved, add `-OutputDirectory 'D:\saved\artifacts'`. 
+Restoration checks the build and archive hashes and refreshes the code cache. It refuses a backup from an older/different installed build. [Full rollback instructions](docs/TROUBLESHOOTING.md#restore-the-original-archive).
 
 ## Custom installations and profiles
 
@@ -106,3 +120,5 @@ Start a Zen [Ideas discussion](https://github.com/zen-browser/desktop/discussion
 ## License
 
 [MPL-2.0](LICENSE). Source patches and fixtures inherit Mozilla/Zen notices; see [NOTICE](NOTICE). This independent project is not endorsed by Zen Browser or Mozilla. Share source and instructions, not a patched `omni.ja` or a browser profile.
+
+## Disclosure: This Readme is generated with AI assistance. (let's be honest it does a better job than me at all the intricacies)
